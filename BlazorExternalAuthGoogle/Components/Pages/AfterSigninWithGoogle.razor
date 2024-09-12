@@ -1,0 +1,45 @@
+﻿@page "/after-login-google"
+@using Microsoft.AspNetCore.Authentication
+@using System.Security.Claims
+
+@inject NavigationManager NavigationManager
+
+<p>Setting up the auth state...</p>
+
+@code {
+    [CascadingParameter]
+    public HttpContext HttpContext { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpContext.User.Identity.IsAuthenticated)
+        {
+            // We will register/login this google user into our system
+            // In our system there should be some UserId mapped with this googld id/email
+
+            //http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress
+            var emailFromGoogleClaims = HttpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            if (string.IsNullOrWhiteSpace(emailFromGoogleClaims))
+            {
+                // Handle this
+                return;
+            }
+            // Regioster this user with this email into your database if not exists already
+            // or login with this email 
+
+            int userId = 123; // Get this from database on the basis of the email id
+
+            // add this user id to existing httpcontext identioty claims
+
+            Claim[] newClaims = [.. HttpContext.User.Claims, new Claim(Constants.Claims.UserId, userId.ToString())];
+
+            var newIdentity = new ClaimsIdentity(newClaims, Constants.Auth.AuthScheme);
+
+            var newPrincipal = new ClaimsPrincipal(newIdentity);
+
+            await HttpContext.SignInAsync(Constants.Auth.AuthScheme, newPrincipal);
+
+            NavigationManager.NavigateTo("/");
+        }
+    }
+}
